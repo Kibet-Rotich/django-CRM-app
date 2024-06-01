@@ -37,7 +37,6 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'CRM',
     'shop',
 ]
 
@@ -124,4 +123,5 @@ STATIC_URL = 'static/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-AUTH_USER_MODEL = 'CRM.CustomUser'
+# AUTH_USER_MODEL = 'CRM.CustomUser'
+AUTH_USER_MODEL = 'shop.User'

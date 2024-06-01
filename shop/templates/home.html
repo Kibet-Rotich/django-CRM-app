@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Home - Cenocade Enterprises</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f5880c;
+        }
+        header {
+            background-color: #343a40;
+            color: white;
+            padding: 20px 0;
+            text-align: center;
+        }
+        h1, h2 {
+            margin: 10px 0;
+        }
+        .hero-section {
+            background-image: url('path/to/hero-image.jpg');
+            background-size: cover;
+            background-position: center;
+            padding: 100px 0;
+            text-align: center;
+            color: white;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+        .hero-section h3 {
+            font-size: 36px;
+            margin-bottom: 20px;
+        }
+        .hero-section p {
+            font-size: 18px;
+            margin-bottom: 30px;
+            line-height: 1.5;
+        }
+        .hero-section .btn {
+            background-color: #ce881e;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            font-size: 18px;
+            text-decoration: none;
+        }
+        .hero-section .btn:hover {
+            background-color: #b36d18;
+        }
+        #product{
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            margin: 20px;
+        }
+.product {
+    width: 33%; /* Adjust width as needed */
+    background-color: white;
+    border-radius: 10px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    margin-bottom: 20px;
+    padding: 20px;
+    text-align: center;
+}
+
+.product img {
+    width: 100%;
+    border-radius: 10px;
+    margin-bottom: 10px;
+}
+
+.product h3 {
+    margin-bottom: 10px;
+    font-size: 24px;
+}
+
+.product p {
+    margin-bottom: 10px;
+    font-size: 18px;
+}
+
+.product a {
+    background-color: #ce881e;
+    color: white;
+    padding: 8px 16px;
+    border-radius: 5px;
+    text-decoration: none;
+}
+
+.product a:hover {
+    background-color: #b36d18;
+}
+
+
+        footer {
+            background-color: #343a40;
+            color: white;
+            padding: 20px 0;
+            text-align: center;
+        }
+        footer a {
+            color: white;
+            text-decoration: none;
+            margin: 0 10px;
+        }
+        
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Welcome to Cenocade Enterprises, {{ user.username }}</h1>
+        <h2>Your Destination for Premium Quality Beef Tallow</h2>
+    </header>
+    
+    <div class="hero-section">
+        <div class="container">
+            <h3>Start Your Healthy Living Journey with Our Premium Beef Tallow!</h3>
+            <p>Discover the benefits of incorporating high-quality beef tallow into your cooking routine. Say goodbye to unhealthy cooking oils and embrace the natural goodness of beef fat for delicious, nutritious meals.</p>
+            <a href="#products" class="btn btn-primary btn-lg">Explore Our Products</a>
+        </div>
+    </div>
+    
+    <div class="products-section" id="products">
+        <h2>Featured Products</h2>
+        <div id="product">
+                {% for item in items %}
+                <div class="product">
+                    <img src="path/to/product-image.jpg" alt="{{ item.name }}">
+                    <h3>{{ item.name }}</h3>
+                    <p>${{ item.price }}</p>
+                    <p>In Stock: {{ item.instock }}</p>
+                    <a href="#">View Details</a>
+                </div>
+                {% endfor %}
+            
+        </div>
+    </div>
+    
+    <footer>
+        <p>&copy; 2024 Cenocade Enterprises. All rights reserved.</p>
+        <p>Follow us on:
+            <a href="https://www.facebook.com/cenocade" target="_blank">Facebook</a> |
+            <a href="https://www.twitter.com/cenocade" target="_blank">Twitter</a> |
+            <a href="https://www.instagram.com/cenocade" target="_blank">Instagram</a>
+        </p>
+        <p>Contact us: <a href="mailto:info@cenocade.com">info@cenocade.com</a> | Phone: +1 (234) 567-8900</p>
+    </footer>
+</body>
+</html>

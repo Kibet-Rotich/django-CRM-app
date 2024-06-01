@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cenocade Enterprises - Home of Premium Beef Tallow</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        header {
+            background-color: #f8f8f8;
+            padding: 20px;
+            text-align: center;
+            border-bottom: 1px solid #ddd;
+        }
+        header h1 {
+            margin: 0;
+            color: #333;
+        }
+        nav {
+            margin-top: 10px;
+        }
+        nav a {
+            margin: 0 10px;
+            text-decoration: none;
+            color: #007BFF;
+            font-weight: bold;
+        }
+        nav a:hover {
+            text-decoration: underline;
+        }
+        .hero {
+            background-image: url('https://example.com/hero-image.jpg'); /* Replace with your image URL */
+            background-size: cover;
+            background-position: center;
+            color: white;
+            text-align: center;
+            padding: 100px 20px;
+        }
+        .hero h2 {
+            font-size: 48px;
+            margin: 0;
+        }
+        .hero p {
+            font-size: 24px;
+        }
+        .container {
+            padding: 20px;
+            text-align: center;
+        }
+        .product-info {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .product-info div {
+            max-width: 300px;
+            margin: 10px;
+            padding: 20px;
+            background-color: #f8f8f8;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+        footer {
+            background-color: #333;
+            color: white;
+            text-align: center;
+            padding: 10px;
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Cenocade Enterprises</h1>
+        <nav>
+            <a href="{% url 'login' %}">Login</a>
+            <a href="{% url 'signup' %}">Sign up</a>
+            <a href="#about">About Us</a>
+            <a href="#products">Products</a>
+            <a href="#contact">Contact</a>
+        </nav>
+    </header>
+
+    <div class="hero">
+        <h2>Welcome to Cenocade Enterprises</h2>
+        <p>Your source for premium beef tallow - a healthier cooking fat</p>
+    </div>
+
+    <div class="container" id="about">
+        <h2>About Us</h2>
+        <p>Cenocade Enterprises is dedicated to providing high-quality beef tallow, a non-inflammatory and healthy cooking fat perfect for your culinary needs. Our commitment to quality ensures that you get the best product for your kitchen.</p>
+    </div>
+
+    <div class="container" id="products">
+        <h2>Our Products</h2>
+        <div class="product-info">
+            <div>
+                <h3>Premium Beef Tallow</h3>
+                <p>Our beef tallow is sourced from the finest cattle, ensuring a pure and healthy product.</p>
+                <p><strong>Price:</strong> $10.99 per lb</p>
+            </div>
+            <div>
+                <h3>Organic Beef Tallow</h3>
+                <p>Made from organically raised cattle, our organic tallow offers superior quality and taste.</p>
+                <p><strong>Price:</strong> $14.99 per lb</p>
+            </div>
+            <div>
+                <h3>Grass-Fed Beef Tallow</h3>
+                <p>Rich in nutrients, our grass-fed beef tallow is perfect for health-conscious cooks.</p>
+                <p><strong>Price:</strong> $12.99 per lb</p>
+            </div>
+        </div>
+    </div>
+
+    <footer id="contact">
+        <p>
+            &copy; 2024 Cenocade Enterprises. All rights reserved.
+        </p>
+        <p>
+            Follow us on:
+            <a href="https://www.facebook.com/cenocade" target="_blank">Facebook</a> |
+            <a href="https://www.twitter.com/cenocade" target="_blank">Twitter</a> |
+            <a href="https://www.instagram.com/cenocade" target="_blank">Instagram</a>
+        </p>
+        <p>
+            Contact us: <a href="mailto:info@cenocade.com">info@cenocade.com</a> | Phone: +1 (234) 567-8900
+        </p>
+    </footer>
+</body>
+</html>
+
