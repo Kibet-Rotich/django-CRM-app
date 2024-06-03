@@ -38,6 +38,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'shop',
+    'payments',
 ]
 
 MIDDLEWARE = [
@@ -125,3 +126,10 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # AUTH_USER_MODEL = 'CRM.CustomUser'
 AUTH_USER_MODEL = 'shop.User'
+
+
+DARJA_CONSUMER_KEY = 'your_consumer_key'
+DARJA_CONSUMER_SECRET = 'your_consumer_secret'
+DARJA_SHORTCODE = 'your_shortcode'
+DARJA_PASSKEY = 'your_passkey'
+DARJA_CALLBACK_URL = 'http://127.0.0.1:8000/payments/callback/'
