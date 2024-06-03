@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+{% load multiply %}
+
+
+{% block content %}
+<div class="container">
+    <h2>Checkout</h2>
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <h3>Cart Summary</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Product</th>
+                    <th>Quantity</th>
+                    <th>Price</th>
+                    <th>Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for cart_item in cart_items %}
+                <tr>
+                    <td>{{ cart_item.item.name }}</td>
+                    <td>{{ cart_item.quantity }}</td>
+                    <td>${{ cart_item.item.price }}</td>
+                    <td>${{ cart_item.quantity|multiply:cart_item.item.price }}</td>
+                </tr>
+                {% endfor %}
+                <tr>
+                    <td colspan="3">Total Price</td>
+                    <td>${{ total_price }}</td>
+                </tr>
+                <tr>
+                    <td colspan="3">Delivery Price</td>
+                    <td>${{ delivery_price }}</td>
+                </tr>
+                <tr>
+                    <td colspan="3"><strong>Total Amount</strong></td>
+                    <td><strong>${{ total_price|add:delivery_price }}</strong></td>
+                </tr>
+            </tbody>
+        </table>
+        <button type="submit">Place Order</button>
+    </form>
+</div>
+{% endblock %}

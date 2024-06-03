@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Cenocade Enterprises{% endblock %}</title>
+    
+    <style>
+        body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+header {
+    background-color: #f8f9fa;
+    padding: 20px;
+    text-align: center;
+}
+
+nav {
+    background-color: #343a40;
+}
+
+nav ul {
+    list-style-type: none;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    text-align: center;
+}
+
+nav ul li {
+    display: inline;
+}
+
+nav ul li a {
+    display: inline-block;
+    color: white;
+    text-align: center;
+    padding: 14px 16px;
+    text-decoration: none;
+}
+
+nav ul li a:hover {
+    background-color: #495057;
+}
+
+main {
+    flex: 1;
+    padding: 20px;
+}
+
+footer {
+    background-color: #f8f9fa;
+    text-align: center;
+    padding: 10px;
+}
+
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Welcome to Cenocade Enterprises, {{ user.username }}</h1>
+        <h2>Your Destination for Premium Quality Beef Tallow</h2>
+    </header>
+
+    <nav>
+        <ul>
+            <li><a href="{% url 'home' %}">HOME</a></li>
+            <li><a href="#Products">Products</a></li>
+            <li><a href="{% url 'cart_detail' %}">Your Cart</a></li>
+            <li><a href="#">About Us</a></li>
+            <li><a href="#">Contact Us</a></li>
+        </ul>
+    </nav>
+
+    <main>
+        {% block content %}
+        {% endblock %}
+    </main>
+
+    <footer>
+        <p>&copy; 2024 Cenocade Enterprises. All rights reserved.</p>
+        <p>Follow us on:
+            <a href="https://www.facebook.com/cenocade" target="_blank">Facebook</a> |
+            <a href="https://www.twitter.com/cenocade" target="_blank">Twitter</a> |
+            <a href="https://www.instagram.com/cenocade" target="_blank">Instagram</a>
+        </p>
+        <p>Contact us: <a href="mailto:info@cenocade.com">info@cenocade.com</a> | Phone: +1 (234) 567-8900</p>
+    </footer>
+</body>
+</html>
