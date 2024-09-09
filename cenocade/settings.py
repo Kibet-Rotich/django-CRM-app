@@ -128,8 +128,8 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 AUTH_USER_MODEL = 'shop.User'
 
 
-DARJA_CONSUMER_KEY = 'your_consumer_key'
-DARJA_CONSUMER_SECRET = 'your_consumer_secret'
-DARJA_SHORTCODE = 'your_shortcode'
-DARJA_PASSKEY = 'your_passkey'
-DARJA_CALLBACK_URL = 'http://127.0.0.1:8000/payments/callback/'
+DARJA_CONSUMER_KEY = 'EZnLo86pMDXxz1tRDpx3DNnoOCEpW1jHL8AeDbLkhaGFLfnE'
+DARJA_CONSUMER_SECRET = 'pl6F4uc3vf7mx3B3Iei02ZHpM7IhLGIl68OA4FrDktGpt7wUf9bTWllBD0zEmcM9'
+DARJA_SHORTCODE = '174379'
+DARJA_PASSKEY = 'bfb279f9aa9bdbcf158e97dd71a467cd2e0c893059b10f78e6b72ada1ed2c919'
+DARJA_CALLBACK_URL = 'https://11ef-41-204-187-5.ngrok-free.app/payment_confirmation/'

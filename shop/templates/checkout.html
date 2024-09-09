@@ -1,47 +1,71 @@
 {% extends 'base.html' %}
-{% load multiply %}
-
 
 {% block content %}
-<div class="container">
+<section id="checkout-container">
     <h2>Checkout</h2>
-    <form method="post">
+
+    <!-- Form for user details and delivery location -->
+    <form id="checkout-form" method="POST" action="{% url 'process_payment' %}">
         {% csrf_token %}
-        {{ form.as_p }}
-        <h3>Cart Summary</h3>
-        <table border="1">
-            <thead>
-                <tr>
-                    <th>Product</th>
-                    <th>Quantity</th>
-                    <th>Price</th>
-                    <th>Total</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for cart_item in cart_items %}
-                <tr>
-                    <td>{{ cart_item.item.name }}</td>
-                    <td>{{ cart_item.quantity }}</td>
-                    <td>${{ cart_item.item.price }}</td>
-                    <td>${{ cart_item.quantity|multiply:cart_item.item.price }}</td>
-                </tr>
+        <div class="form-group">
+            <label for="name">Name:</label>
+            <input type="text" id="name" name="name" required>
+        </div>
+
+        <div class="form-group">
+            <label for="phone">Phone Number:</label>
+            <input type="text" id="phone" name="phone" required pattern="\+?\d{10,13}" placeholder="+254712345678">
+        </div>
+
+        <div class="form-group">
+            <label for="location">Delivery Location:</label>
+            <select id="location" name="location" required onchange="updateTotalWithDelivery()">
+                <option value="" data-price="0">-- Select a location --</option>
+                {% for location in locations %}
+                <option value="{{ location.id }}" data-price="{{ location.delivery_price }}">{{ location.name }} (KES {{ location.delivery_price }})</option>
                 {% endfor %}
-                <tr>
-                    <td colspan="3">Total Price</td>
-                    <td>${{ total_price }}</td>
-                </tr>
-                <tr>
-                    <td colspan="3">Delivery Price</td>
-                    <td>${{ delivery_price }}</td>
-                </tr>
-                <tr>
-                    <td colspan="3"><strong>Total Amount</strong></td>
-                    <td><strong>${{ total_price|add:delivery_price }}</strong></td>
-                </tr>
-            </tbody>
-        </table>
-        <button type="submit">Place Order</button>
+            </select>
+        </div>
+
+        <div id="cart-total">
+            <p>Cart Total: KES <span id="cart-total-amount">0.00</span></p>
+            <p>Delivery Fee: KES <span id="delivery-fee">0.00</span></p>
+            <p>Total Amount: KES <span id="total-amount">0.00</span></p>
+        </div>
+
+        <button type="submit" id="pay-button">Pay</button>
     </form>
-</div>
+
+    <!-- JavaScript for handling the cart data and displaying the total amount -->
+    <script>
+        let cartTotal = 0;
+        let deliveryFee = 0;
+
+        // Calculate cart total on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            const cartTotalElement = document.getElementById('cart-total-amount');
+            const totalAmountElement = document.getElementById('total-amount');
+            const cart = JSON.parse(localStorage.getItem('cart')) || [];
+            
+            cartTotal = cart.reduce((total, item) => total + (item.price * item.quantity), 0);
+            
+            cartTotalElement.textContent = cartTotal.toFixed(2);
+            totalAmountElement.textContent = (cartTotal + deliveryFee).toFixed(2);
+        });
+
+        // Update the total amount when a delivery location is selected
+        function updateTotalWithDelivery() {
+            const deliverySelect = document.getElementById('location');
+            const selectedOption = deliverySelect.options[deliverySelect.selectedIndex];
+            deliveryFee = parseFloat(selectedOption.getAttribute('data-price')) || 0;
+
+            const deliveryFeeElement = document.getElementById('delivery-fee');
+            const totalAmountElement = document.getElementById('total-amount');
+
+            deliveryFeeElement.textContent = deliveryFee.toFixed(2);
+            totalAmountElement.textContent = (cartTotal + deliveryFee).toFixed(2);
+        }
+    </script>
+
+</section>
 {% endblock %}

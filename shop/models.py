@@ -26,37 +26,31 @@ class Location(models.Model):
         return self.name
     
 class Order(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
-    location = models.ForeignKey(Location, on_delete=models.SET_NULL, null=True)
-    total_price = models.DecimalField(max_digits=10, decimal_places=2, default=0.0)
-    created_at = models.DateTimeField(auto_now_add=True)
-    payment_mode = models.CharField(max_length=50, default='Mpesa')
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    phone_number = models.CharField(max_length=15)
+    status = models.CharField(max_length=20)  # e.g., 'pending', 'completed', 'failed'
+    location = models.ForeignKey(Location, on_delete=models.CASCADE)
+    transaction_id = models.CharField(max_length=255, blank=True, null=True)
+    payment_amount = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
+    payment_phone_number = models.CharField(max_length=15, blank=True, null=True)
+    payment_time = models.DateTimeField(blank=True, null=True)
 
     def __str__(self):
-        return f"Order #{self.id} by {self.user.username}"
+        return f"Order {self.id} - {self.status}"
 
 
 class OrderItem(models.Model):
-    order = models.ForeignKey(Order, on_delete=models.CASCADE)
-    item = models.ForeignKey(Item, on_delete=models.CASCADE)
+    order = models.ForeignKey(Order, related_name='items', on_delete=models.CASCADE)
+    product = models.ForeignKey(Item, on_delete=models.CASCADE)
     quantity = models.PositiveIntegerField()
-    price = models.DecimalField(max_digits=10, decimal_places=2)
+    total_price = models.DecimalField(max_digits=10, decimal_places=2)
+
+    def save(self, *args, **kwargs):
+        # Calculate the total price based on the quantity and product price
+        self.total_price = self.product.price * self.quantity
+        super().save(*args, **kwargs)
 
     def __str__(self):
-        return f"{self.quantity} x {self.item.name}"
-
-class Cart(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
-
-class CartItem(models.Model):
-    cart = models.ForeignKey(Cart, on_delete=models.CASCADE)
-    item = models.ForeignKey(Item, on_delete=models.CASCADE)
-    quantity = models.PositiveIntegerField()
-
-    def __str__(self):
-        return f"{self.quantity} x {self.item.name} in Cart"
-
-
-
+        return f"{self.product.name} - {self.quantity}"
 
 

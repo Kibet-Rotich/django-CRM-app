@@ -23,20 +23,37 @@
     
     <div class="products-section" id="products">
         <h2>Featured Products</h2>
-        <div id="product">
-                {% for item in items %}
-                <div class="product">
-                    <img src="path/to/product-image.jpg" alt="{{ item.name }}">
-                    <h3>{{ item.name }}</h3>
-                    <p>${{ item.price }}</p>
-                    <p>In Stock: {{ item.instock }}</p>
-                    <a href="{% url 'add_to_cart' item.id %}">Add to Cart</a>
-                    <a href="#">View Details</a>
-                </div>
-                {% endfor %}
-            
+        <div class="product-list">
+            {% for item in items %}
+            <div class="product" id="product-{{ item.id }}">
+                <img src="{{ item.image_url }}" alt="{{ item.name }}">
+                <h3>{{ item.name }}</h3>
+                <p>KES {{ item.price }}</p>
+                
+                <button onclick="addToCart({{ item.id }}, '{{ item.name }}', {{ item.price }})">Add to Cart</button>
+                <a href="#">View Details</a>
+            </div>
+            {% endfor %}
         </div>
     </div>
+    
+
+    <script>
+        function addToCart(id, name, price) {
+            const cart = JSON.parse(localStorage.getItem('cart')) || [];
+            const existingItem = cart.find(item => item.id === id);
+        
+            if (existingItem) {
+                existingItem.quantity++;
+            } else {
+                cart.push({ id, name, price, quantity: 1 });
+            }
+        
+            localStorage.setItem('cart', JSON.stringify(cart));
+            
+            
+        }
+    </script>
 
 
     <style>

@@ -2,132 +2,171 @@ from django.shortcuts import render, redirect
 from django.contrib.auth import login as auth_login, authenticate, logout as auth_logout
 from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
 from .forms import CustomUserCreationForm
-def index(request):
-    return render(request, 'index.html')
 
 from .models import Item
 
-def home(request):
+def index(request):
     # Retrieve all items from the database
     items = Item.objects.all()
     return render(request, 'home.html', {'items': items})
 
+def cart(request):
+    return render(request, 'cart_detail.html')
 
 
-
-def signup(request):
-    if request.method == 'POST':
-        form = CustomUserCreationForm(request.POST)
-        if form.is_valid():
-            user = form.save()
-            auth_login(request, user)
-            return redirect('home')
-    else:
-        form = CustomUserCreationForm()
-    return render(request, 'signup.html', {'form': form})
-
-def login_view(request):
-    if request.method == 'POST':
-        form = AuthenticationForm(request, data=request.POST)
-        if form.is_valid():
-            username = form.cleaned_data.get('username')
-            password = form.cleaned_data.get('password')
-            user = authenticate(username=username, password=password)
-            if user is not None:
-                auth_login(request, user)
-                return redirect('home')
-    else:
-        form = AuthenticationForm()
-    return render(request, 'login.html', {'form': form})
-
-def logout_view(request):
-    auth_logout(request)
-    return redirect('login')
-
-
-
-from django.shortcuts import render, get_object_or_404, redirect
-from django.contrib.auth.decorators import login_required
-from .models import Item, Cart, CartItem
-
-
-
-@login_required
-def add_to_cart(request, item_id):
-    item = get_object_or_404(Item, id=item_id)
-    cart, created = Cart.objects.get_or_create(user=request.user)
-    
-    # Use defaults to set initial quantity if creating a new CartItem
-    cart_item, created = CartItem.objects.get_or_create(cart=cart, item=item, defaults={'quantity': 1})
-    if not created:
-        # Increment the quantity if the CartItem already exists
-        cart_item.quantity += 1
-        cart_item.save()
-    
-    return redirect('home')  # Redirect to cart detail page
-
-
-
-
-from django.db.models import Sum
-@login_required
-def cart_detail(request):
-    cart_items = CartItem.objects.filter(cart=request.user.cart)
-    total_amount = cart_items.aggregate(Sum('item__price'))['item__price__sum']
-    return render(request, 'cart_detail.html', {'cart_items': cart_items, 'total_amount': total_amount})
-
-
-
-
-def update_cart_item_quantity(request, cart_item_id):
-    cart_item = CartItem.objects.get(id=cart_item_id)
-    if request.method == 'POST':
-        quantity = request.POST.get('quantity')
-        cart_item.quantity = quantity
-        cart_item.save()
-    return redirect('cart_detail')
-
-
-
-
-from .models import CartItem, Order, Location
-from .forms import CheckoutForm
-
+from .models import Location
 def checkout(request):
-    cart_items = CartItem.objects.filter(cart=request.user.cart)
-    total_price = sum(item.quantity * item.item.price for item in cart_items)
-    delivery_price = 0
+    locations = Location.objects.all()  # Fetch all available locations
+    return render(request, 'checkout.html', {'locations': locations})
 
+
+
+
+#payment
+import base64
+import base64
+import requests
+from datetime import datetime
+from django.conf import settings
+from django.http import JsonResponse, HttpResponse
+from django.views.decorators.csrf import csrf_exempt
+from .models import Order, Location
+
+def get_access_token():
+    consumer_key = settings.DARAJA_CONSUMER_KEY
+    consumer_secret = settings.DARAJA_CONSUMER_SECRET
+    api_url = "https://sandbox.safaricom.co.ke/oauth/v1/generate?grant_type=client_credentials"
+    r = requests.get(api_url, auth=(consumer_key, consumer_secret))
+    json_response = r.json()
+    return json_response['access_token']
+
+@csrf_exempt
+def initiate_payment(request):
     if request.method == 'POST':
-        form = CheckoutForm(request.POST)
-        if form.is_valid():
-            location = form.cleaned_data['location']
-            payment_mode = form.cleaned_data['payment_mode']
-            delivery_price = location.delivery_price
-            total_amount = total_price + delivery_price
-            
-            # Create the order
-            order = Order.objects.create(
-                user=request.user,
-                location=location,
-                total_price=total_amount,
-                payment_mode=payment_mode
-            )
-            
-            # Clear the cart (optional)
-            cart_items.delete()
-            
-            return redirect('order_confirmation', order_id=order.id)
-    else:
-        form = CheckoutForm()
+        phone_number = request.POST.get('phone_number')
+        amount = float(request.POST.get('amount', 0))
+        location_id = request.POST.get('location_id')
 
-    return render(request, 'checkout.html', {
-        'form': form,
-        'cart_items': cart_items,
-        'total_price': total_price,
-        'delivery_price': delivery_price
-    })
+        if not phone_number or not amount or not location_id:
+            return JsonResponse({'error': 'Phone number, amount, and location are required'}, status=400)
 
-def order_confirmation(request, order_id):
-    order = Order.objects.get(id=order_id)
-    return render(request, 'order_confirmation.html', {'order': order})
+        # Find location and calculate total amount
+        try:
+            location = Location.objects.get(id=location_id)
+        except Location.DoesNotExist:
+            return JsonResponse({'error': 'Invalid location ID'}, status=400)
+        
+        delivery_price = location.delivery_price
+        total_amount = amount + delivery_price
+
+        # Create an order with location details and status
+        order = Order.objects.create(
+            amount=total_amount,
+            phone_number=phone_number,
+            status='pending',
+            location=location
+        )
+
+        access_token = get_access_token()
+        api_url = "https://sandbox.safaricom.co.ke/mpesa/stkpush/v1/processrequest"
+        headers = {
+            "Authorization": f"Bearer {access_token}"
+        }
+        
+        timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
+        business_short_code = settings.DARAJA_BUSINESS_SHORTCODE
+        lipa_na_mpesa_online_passkey = settings.DARAJA_PASSKEY
+        data_to_encode = business_short_code + lipa_na_mpesa_online_passkey + timestamp
+        encoded_string = base64.b64encode(data_to_encode.encode())
+        password = encoded_string.decode('utf-8')
+        
+        payload = {
+            "BusinessShortCode": business_short_code,
+            "Password": password,
+            "Timestamp": timestamp,
+            "TransactionType": "CustomerPayBillOnline",
+            "Amount": total_amount,
+            "PartyA": phone_number,
+            "PartyB": business_short_code,
+            "PhoneNumber": phone_number,
+            "CallBackURL": settings.DARAJA_CALLBACK_URL,
+            "AccountReference": str(order.id),
+            "TransactionDesc": "Payment for order"
+        }
+        
+        response = requests.post(api_url, json=payload, headers=headers)
+        return JsonResponse(response.json())
+
+    return HttpResponse(status=405)  # Method Not Allowed if not POST
+
+import requests
+from datetime import datetime
+from django.conf import settings
+from django.http import JsonResponse, HttpResponse
+from django.views.decorators.csrf import csrf_exempt
+from .models import Order
+
+@csrf_exempt
+def payment_confirmation(request):
+    if request.method == 'POST':
+        # Extract payment confirmation data
+        payment_data = request.POST.get("Body", {}).get("stkCallback", {})
+
+        # Extract relevant fields
+        result_code = payment_data.get("ResultCode")
+        result_desc = payment_data.get("ResultDesc")
+        callback_metadata = payment_data.get("CallbackMetadata", {}).get("Item", [])
+
+        # Initialize variables
+        amount = None
+        transaction_id = None
+        transaction_date = None
+        phone_number = None
+        account_reference = None
+
+        # Extract fields from callback metadata
+        for item in callback_metadata:
+            if item["Name"] == "Amount":
+                amount = item["Value"]
+            elif item["Name"] == "MpesaReceiptNumber":
+                transaction_id = item["Value"]
+            elif item["Name"] == "TransactionDate":
+                transaction_date = item["Value"]
+            elif item["Name"] == "PhoneNumber":
+                phone_number = item["Value"]
+            elif item["Name"] == "AccountReference":
+                account_reference = item["Value"]
+
+        # Validate the received data
+        if not account_reference:
+            return JsonResponse({'error': 'Missing AccountReference'}, status=400)
+        if not transaction_id:
+            return JsonResponse({'error': 'Missing Transaction ID'}, status=400)
+        if not amount:
+            return JsonResponse({'error': 'Missing Amount'}, status=400)
+        if not phone_number:
+            return JsonResponse({'error': 'Missing Phone Number'}, status=400)
+        if not transaction_date:
+            return JsonResponse({'error': 'Missing Transaction Date'}, status=400)
+
+        try:
+            # Find the corresponding order using the Account Reference
+            order = Order.objects.get(id=account_reference)
+        except Order.DoesNotExist:
+            return JsonResponse({'error': 'Order not found'}, status=404)
+
+        # Update the order status and save payment details
+        if result_code == 0:  # assuming 0 indicates success
+            order.status = 'completed'
+        else:
+            order.status = 'failed'
+
+        order.transaction_id = transaction_id
+        order.payment_amount = amount
+        order.payment_phone_number = phone_number
+        order.payment_time = datetime.strptime(str(transaction_date), "%Y%m%d%H%M%S")
+        order.save()
+
+        return JsonResponse({'result': 'Payment confirmation received and order updated'})
+
+    return HttpResponse(status=405)  # Method Not Allowed if not POST
