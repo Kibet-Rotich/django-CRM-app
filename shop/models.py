@@ -21,9 +21,12 @@ class Item(models.Model):
 class Location(models.Model):
     name = models.CharField(max_length=100)
     delivery_price = models.DecimalField(max_digits=10, decimal_places=2)
+    business_days = models.PositiveIntegerField(default=1)  # New field for processing time
 
     def __str__(self):
         return self.name
+
+
     
 class Order(models.Model):
     STATUS_CHOICES = [
@@ -32,14 +35,22 @@ class Order(models.Model):
         ('completed', 'Completed')
     ]
 
+    PAYMENT_STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('failed', 'Failed'),
+        ('successful', 'Successful')
+    ]
+
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     phone_number = models.CharField(max_length=15)
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')  # For production status
+    payment_status = models.CharField(max_length=20, choices=PAYMENT_STATUS_CHOICES, default='pending')  # New field for payment status
     location = models.ForeignKey(Location, on_delete=models.CASCADE)
     checkout_request_id = models.CharField(max_length=50, null=True, blank=True)
 
     def __str__(self):
         return f"Order {self.id} - {self.get_status_display()}"
+
 
 
 class OrderItem(models.Model):

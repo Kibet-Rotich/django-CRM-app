@@ -120,7 +120,12 @@ def initiate_payment(request):
         if response_data.get('ResponseCode') == '0':
             order.checkout_request_id = response_data.get('CheckoutRequestID')
             order.save()
-            return JsonResponse({'message': 'Payment initiated successfully', 'order_id': order.id}, status=200)
+            return JsonResponse({  # Add return here
+                'status': 'success',
+                'checkout_request_id': response_data.get('CheckoutRequestID'),
+                'order_id': order.id  # Add the order ID to the response
+            }, status=200)
+
         else:
             return JsonResponse({'error': 'Failed to initiate payment', 'details': response_data}, status=400)
 
@@ -129,7 +134,7 @@ def initiate_payment(request):
 import json
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from .models import Payment, Order
+from .models import Payment
 
 @csrf_exempt
 def payment_confirmation(request):
@@ -162,7 +167,7 @@ def payment_confirmation(request):
                     phone_number = item['Value']
 
             # Create a Payment record
-            payment = Payment.objects.create(
+            Payment.objects.create(
                 checkout_request_id=checkout_request_id,
                 amount=amount,
                 mpesa_receipt_number=mpesa_receipt_number,
@@ -172,19 +177,7 @@ def payment_confirmation(request):
                 result_description=result_description
             )
 
-            # Update order status based on the payment result
-            try:
-                order = Order.objects.get(checkout_request_id=checkout_request_id)
-                if result_code == 0:  # Successful payment
-                    order.status = 'confirmed'
-                else:
-                    order.status = 'failed'
-                order.save()
-            except Order.DoesNotExist:
-                # Handle case where order doesn't exist
-                return JsonResponse({'error': 'Order not found for the provided CheckoutRequestID'}, status=404)
-
-            return JsonResponse({'message': 'Payment processed successfully'}, status=200)
+            return JsonResponse({'message': 'Payment recorded successfully'}, status=200)
 
         except (KeyError, json.JSONDecodeError) as e:
             return JsonResponse({'error': 'Invalid data received', 'details': str(e)}, status=400)
@@ -192,33 +185,23 @@ def payment_confirmation(request):
     return JsonResponse({'error': 'Invalid request method'}, status=405)
 
 from django.shortcuts import render, redirect, get_object_or_404
-from django.http import JsonResponse
-from .models import Order, Payment
-from .forms import OrderStatusForm
+from .models import Order
+from django.contrib.auth.decorators import login_required
 
+@login_required
 def orders(request):
     # Fetch all orders
     orders = Order.objects.all()
 
-    # Check payment status for each order
-    for order in orders:
-        # Find the payment that matches the order's checkout_request_id
-        payment = Payment.objects.filter(checkout_request_id=order.checkout_request_id).first()
-        
-        if payment and payment.result_code == 0:  # Assuming result_code 0 indicates payment success
-            order.is_paid = True  # Add a custom attribute to mark payment status
-        else:
-            order.is_paid = False  # Not paid or no payment found
-
     if request.method == 'POST':
-        # Handle order status update if submitted
+        # Handle order status update for production status
         order_id = request.POST.get('order_id')
         new_status = request.POST.get('status')
         
         if order_id and new_status:
-            # Update the order status
+            # Update the production status
             order = get_object_or_404(Order, id=order_id)
-            order.status = new_status
+            order.status = new_status  # This is the production status field
             order.save()
 
         # Redirect to the same page after updating the status
@@ -235,9 +218,9 @@ from .models import Payment
 
 # Function to generate the password
 def generate_password():
-    business_short_code = settings.DARAJA_BUSINESS_SHORT_CODE
+    business_short_code = settings.DARAJA_SHORTCODE
     lipa_na_mpesa_online_passkey = settings.DARAJA_PASSKEY
-    timestamp = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
+    timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
     data_to_encode = business_short_code + lipa_na_mpesa_online_passkey + timestamp
     encoded_password = base64.b64encode(data_to_encode.encode()).decode('utf-8')
     return encoded_password, timestamp
@@ -259,7 +242,7 @@ def query_transaction_status(request, checkout_request_id):
 
     # Step 2: Prepare the query request payload
     payload = {
-        "BusinessShortCode": settings.DARAJA_BUSINESS_SHORT_CODE,
+        "BusinessShortCode": settings.DARAJA_SHORTCODE,
         "Password": password,
         "Timestamp": timestamp,
         "CheckoutRequestID": checkout_request_id,
@@ -272,8 +255,7 @@ def query_transaction_status(request, checkout_request_id):
         "Content-Type": "application/json"
     }
     
-    # Choose the appropriate API URL based on the environment (Sandbox/Production)
-    query_url = f"{"https://sandbox.safaricom.co.ke"}/mpesa/stkpushquery/v1/query"  # Use production URL in prod
+    query_url = f"https://sandbox.safaricom.co.ke/mpesa/stkpushquery/v1/query"  # Use production URL in prod
     
     response = requests.post(query_url, json=payload, headers=headers)
 
@@ -281,14 +263,56 @@ def query_transaction_status(request, checkout_request_id):
     if response.status_code == 200:
         result = response.json()
         if result.get("ResponseCode") == "0" and result.get("ResultCode") == "0":
-            # Transaction successful, update the Payment model
-            payment = Payment.objects.get(checkout_request_id=checkout_request_id)
-            payment.result_code = result.get("ResultCode")
-            payment.result_description = result.get("ResultDesc")
-            payment.save()
+            # Transaction successful, update the Order model
+            order = Order.objects.get(checkout_request_id=checkout_request_id)
+            order.payment_status = 'successful'
+            order.save()
 
             return JsonResponse({"message": "Transaction successful", "status": "success", "data": result})
         else:
+            # Update order payment status to failed if the transaction failed
+            order = Order.objects.get(checkout_request_id=checkout_request_id)
+            order.payment_status = 'failed'
+            order.save()
+
             return JsonResponse({"message": "Transaction failed", "status": "failed", "data": result})
     else:
         return JsonResponse({"message": "Failed to query transaction status", "status": "error"})
+
+from django.contrib.auth.decorators import login_required
+
+@login_required
+def payment_list(request):
+    payments = Payment.objects.all()  # Fetch all payments
+    return render(request, 'payment_list.html', {'payments': payments})
+
+from django.shortcuts import render, get_object_or_404
+from .models import Order
+
+def order_success(request, order_id):
+    order = get_object_or_404(Order, id=order_id)  # Replace Order with your actual model
+    context = {
+        'order': order,
+        # Include any other context you want to pass
+    }
+    return render(request, 'order_success.html', context)  # Make sure to create this template
+
+
+from django.shortcuts import render, redirect
+from django.contrib.auth import login, authenticate
+from .forms import CustomLoginForm
+
+def login_view(request):
+    if request.method == 'POST':
+        form = CustomLoginForm(request, data=request.POST)
+        if form.is_valid():
+            username = form.cleaned_data['username']
+            password = form.cleaned_data['password']
+            user = authenticate(request, username=username, password=password)
+            if user is not None:
+                login(request, user)
+                return redirect('orders')  # Redirect to a success page
+    else:
+        form = CustomLoginForm()
+    
+    return render(request, 'login.html', {'form': form})

@@ -134,3 +134,4 @@ DARAJA_SHORTCODE = '174379'
 DARAJA_PASSKEY = 'bfb279f9aa9bdbcf158e97dd71a467cd2e0c893059b10f78e6b72ada1ed2c919'
 DARAJA_CALLBACK_URL = 'https://cenocade.com/payment_confirmation'
 
+LOGIN_URL = 'login/'

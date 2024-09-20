@@ -15,9 +15,9 @@
                 <th>Phone Number</th>
                 <th>Amount</th>
                 <th>Items</th>
-                <th>Status</th>
-                <th>Paid</th>
-                <th>Change Status</th>
+                <th>Production Status</th>
+                <th>Payment Status</th>
+                <th>Change Production Status</th>
             </tr>
         </thead>
         <tbody>
@@ -33,21 +33,15 @@
                         {% endfor %}
                     </ul>
                 </td>
-                <td>{{ order.status }}</td>
-                <td>
-                    {% if order.is_paid %}
-                    Paid
-                    {% else %}
-                    Not Paid
-                    {% endif %}
-                </td>
+                <td>{{ order.get_status_display }}</td>  <!-- Production status display -->
+                <td>{{ order.get_payment_status_display }}</td>  <!-- Payment status display -->
                 <td>
                     <form method="POST">
                         {% csrf_token %}
                         <input type="hidden" name="order_id" value="{{ order.id }}">
                         <select name="status">
                             <option value="pending" {% if order.status == 'pending' %}selected{% endif %}>Pending</option>
-                            <option value="in progress" {% if order.status == 'in progress' %}selected{% endif %}>In Progress</option>
+                            <option value="in_progress" {% if order.status == 'in_progress' %}selected{% endif %}>In Progress</option>
                             <option value="completed" {% if order.status == 'completed' %}selected{% endif %}>Completed</option>
                         </select>
                         <button type="submit">Update</button>
