@@ -5,39 +5,48 @@
     <h2>Checkout</h2>
 
     <!-- Form for user details and delivery location -->
-    <form id="checkout-form" method="POST" action="{% url 'process_payment' %}">
+    <form id="checkout-form" method="POST" action="{% url 'initiate_payment' %}">
         {% csrf_token %}
+        
         <div class="form-group">
             <label for="name">Name:</label>
             <input type="text" id="name" name="name" required>
         </div>
-
+    
         <div class="form-group">
             <label for="phone">Phone Number:</label>
-            <input type="text" id="phone" name="phone" required pattern="\+?\d{10,13}" placeholder="+254712345678">
+            <input type="text" id="phone_number" name="phone_number" required pattern="\+?\d{10,13}" placeholder="+254712345678">
         </div>
-
+    
         <div class="form-group">
             <label for="location">Delivery Location:</label>
-            <select id="location" name="location" required onchange="updateTotalWithDelivery()">
+            <select id="location" name="location_id" required onchange="updateTotalWithDelivery()">
                 <option value="" data-price="0">-- Select a location --</option>
                 {% for location in locations %}
                 <option value="{{ location.id }}" data-price="{{ location.delivery_price }}">{{ location.name }} (KES {{ location.delivery_price }})</option>
                 {% endfor %}
             </select>
         </div>
-
+    
         <div id="cart-total">
             <p>Cart Total: KES <span id="cart-total-amount">0.00</span></p>
             <p>Delivery Fee: KES <span id="delivery-fee">0.00</span></p>
             <p>Total Amount: KES <span id="total-amount">0.00</span></p>
         </div>
-
+    
+        <!-- Hidden input to store total amount (including delivery) -->
+        <input type="hidden" id="amount" name="amount" value="0.00">
+    
         <button type="submit" id="pay-button">Pay</button>
     </form>
+    
 
     <!-- JavaScript for handling the cart data and displaying the total amount -->
     <script>
+        document.getElementById('checkout-form').addEventListener('submit', function(event) {
+            updateTotalWithDelivery();  // Ensure the total amount is updated just before submitting
+        });
+        
         let cartTotal = 0;
         let deliveryFee = 0;
 
@@ -55,16 +64,23 @@
 
         // Update the total amount when a delivery location is selected
         function updateTotalWithDelivery() {
-            const deliverySelect = document.getElementById('location');
-            const selectedOption = deliverySelect.options[deliverySelect.selectedIndex];
-            deliveryFee = parseFloat(selectedOption.getAttribute('data-price')) || 0;
-
-            const deliveryFeeElement = document.getElementById('delivery-fee');
-            const totalAmountElement = document.getElementById('total-amount');
-
-            deliveryFeeElement.textContent = deliveryFee.toFixed(2);
-            totalAmountElement.textContent = (cartTotal + deliveryFee).toFixed(2);
+            const locationSelect = document.getElementById('location');
+            const deliveryFee = locationSelect.options[locationSelect.selectedIndex].getAttribute('data-price');
+            const cartTotal = parseFloat(document.getElementById('cart-total-amount').textContent);
+            const totalAmount = cartTotal + parseFloat(deliveryFee);
+        
+            console.log('Delivery Fee:', deliveryFee);  // Check if the delivery fee is being updated
+            console.log('Cart Total:', cartTotal);  // Check if the cart total is correct
+            console.log('Total Amount:', totalAmount);  // Check if total amount is correctly calculated
+        
+            document.getElementById('delivery-fee').textContent = deliveryFee;
+            document.getElementById('total-amount').textContent = totalAmount.toFixed(2);
+            document.getElementById('amount').value = totalAmount.toFixed(2);  // Update the hidden field
+        
+            console.log('Amount to be sent:', document.getElementById('amount').value);  // Log the value before submission
         }
+        
+        
     </script>
 
 </section>

@@ -26,17 +26,20 @@ class Location(models.Model):
         return self.name
     
 class Order(models.Model):
+    STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('in_progress', 'In Progress'),
+        ('completed', 'Completed')
+    ]
+
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     phone_number = models.CharField(max_length=15)
-    status = models.CharField(max_length=20)  # e.g., 'pending', 'completed', 'failed'
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
     location = models.ForeignKey(Location, on_delete=models.CASCADE)
-    transaction_id = models.CharField(max_length=255, blank=True, null=True)
-    payment_amount = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
-    payment_phone_number = models.CharField(max_length=15, blank=True, null=True)
-    payment_time = models.DateTimeField(blank=True, null=True)
+    checkout_request_id = models.CharField(max_length=50, null=True, blank=True)
 
     def __str__(self):
-        return f"Order {self.id} - {self.status}"
+        return f"Order {self.id} - {self.get_status_display()}"
 
 
 class OrderItem(models.Model):
@@ -54,3 +57,18 @@ class OrderItem(models.Model):
         return f"{self.product.name} - {self.quantity}"
 
 
+
+
+
+
+class Payment(models.Model):
+    checkout_request_id = models.CharField(max_length=50, unique=True)  # Unique ID from the Daraja callback
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    mpesa_receipt_number = models.CharField(max_length=20)
+    phone_number = models.CharField(max_length=15)
+    transaction_date = models.CharField(max_length=20)
+    result_code = models.IntegerField()
+    result_description = models.CharField(max_length=255)
+
+    def __str__(self):
+        return f"Payment {self.mpesa_receipt_number} for {self.checkout_request_id}"
