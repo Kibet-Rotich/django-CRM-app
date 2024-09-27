@@ -13,6 +13,7 @@ class Item(models.Model):
     description = models.TextField()
     price = models.DecimalField(max_digits=10, decimal_places=2)
     instock = models.DecimalField(max_digits=7, decimal_places = 0)
+    link = models.TextField()
     # Additional fields as needed
 
     def __str__(self):

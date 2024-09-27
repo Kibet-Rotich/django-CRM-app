@@ -1,150 +1,125 @@
-{% extends 'base.html' %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Home</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
 </head>
 <body>
+    <style>
+        header img {
+            width: 139px;
+            height: 137px;
+        }
+        li {
+            padding: 10px;
+        }
+        header {
+            display: flex;
+            justify-content: space-between;
+        }
+        .hero-section {
+            background-color: black;
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+        p {
+            font-family: 'Inter', sans-serif;
+            font-size: 64px;
+            font-style: italic;
+            font-weight: 100;
+        }
+        .hero-section img {
+            transform: rotate(30deg);
+        }
+        header ul li a {
+            color: black;
+            text-decoration: none;
+        }
+        #logo {
+            flex: 2;
+        }
+        #nav {
+            flex: 4;
+        }
+        #nav ul {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+        }
+        .product img {
+            width: 100%;
+            transform: rotate(-30deg);
+        }
+        .product button {
+            background-color: grey;
+            color: black;
+            font-family: 'Inter', sans-serif;
+        }
+    </style>
+
     <header>
-        <h1>Welcome to Cenocade Enterprises, {{ user.username }}</h1>
-        <h2>Your Destination for Premium Quality Beef Tallow</h2>
-    </header>
-    {% block content%}
-    
-    <div class="hero-section">
-        <div class="container">
-            <h3>Start Your Healthy Living Journey with Our Premium Beef Tallow!</h3>
-            <p>Discover the benefits of incorporating high-quality beef tallow into your cooking routine. Say goodbye to unhealthy cooking oils and embrace the natural goodness of beef fat for delicious, nutritious meals.</p>
-            <a href="#products" class="btn btn-primary btn-lg">Explore Our Products</a>
+        <div id="logo">
+            <img src="https://i.postimg.cc/Y9qFKt10/cenocade-colour-no-background-modified.png" alt="Cenocade Enterprises">
         </div>
-    </div>
-    
-    <div class="products-section" id="products">
-        <h2>Featured Products</h2>
-        <div class="product-list">
+        <div id="nav" class="d-flex justify-content-between align-items-center">
+            <ul class="d-flex list-unstyled m-0">
+                <li><a href="{% url 'index' %}">Home</a></li>
+                <li><a>Shop</a></li>
+                <li><a href="{% url 'cart' %}">Cart</a></li>
+                <li><a>About Us</a></li>
+                <li><a>Contact Us</a></li>
+            </ul>
+        </div>
+    </header>
+
+    <section class="hero-section d-flex flex-column flex-md-row justify-content-center align-items-center text-center text-md-left">
+        <div class="order-2 order-md-1 mb-4 mb-md-0">
+            <p class="display-4">Start Your Healthy Living Journey with Our Premium Beef Tallow!</p>
+        </div>
+        <div class="order-1 order-md-2">
+            <img src="https://i.postimg.cc/SRnzRV1p/IMG-20240324-WA0010-3-removebg-preview.png" alt="Beef Tallow" class="img-fluid">
+        </div>
+    </section>
+
+    <div class="products-section container">
+        <h2 class="text-center mb-4">Featured Products</h2>
+        <div id="products" class="row">
             {% for item in items %}
-            <div class="product" id="product-{{ item.id }}">
-                <img src="{{ item.image_url }}" alt="{{ item.name }}">
-                <h3>{{ item.name }}</h3>
-                <p>KES {{ item.price }}</p>
-                
-                <button onclick="addToCart({{ item.id }}, '{{ item.name }}', {{ item.price }})">Add to Cart</button>
-                <a href="#">View Details</a>
+            <div class="col-12 col-sm-6 col-md-4 mb-4">
+                <div class="product p-3 bg-dark text-white rounded">
+                    <img src="{{ item.link }}" alt="{{ item.name }}" class="img-fluid mx-auto d-block">
+                    <h3 class="text-center mt-3">{{ item.name }}</h3>
+                    <p class="text-center">KES {{ item.price }}</p>
+                    <button class="btn btn-light d-block mx-auto" onclick="addToCart({{ item.id }}, '{{ item.name }}', {{ item.price }})">Add to Cart</button>
+                </div>
             </div>
             {% endfor %}
         </div>
     </div>
-    
 
     <script>
         function addToCart(id, name, price) {
             const cart = JSON.parse(localStorage.getItem('cart')) || [];
             const existingItem = cart.find(item => item.id === id);
-        
+
             if (existingItem) {
                 existingItem.quantity++;
             } else {
                 cart.push({ id, name, price, quantity: 1 });
             }
-        
+
             localStorage.setItem('cart', JSON.stringify(cart));
-            
-            
         }
     </script>
 
-
-    <style>
-        
-    
-    
-        h1, h2 {
-            margin: 10px 0;
-        }
-        .hero-section {
-            background-image: url('path/to/hero-image.jpg');
-            background-size: cover;
-            background-position: center;
-            padding: 100px 0;
-            text-align: center;
-            color: black;
-        }
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 0 20px;
-        }
-        .hero-section h3 {
-            font-size: 36px;
-            margin-bottom: 20px;
-        }
-        .hero-section p {
-            font-size: 18px;
-            margin-bottom: 30px;
-            line-height: 1.5;
-        }
-        .hero-section .btn {
-            background-color: #ce881e;
-            color: white;
-            padding: 10px 20px;
-            border: none;
-            border-radius: 5px;
-            font-size: 18px;
-            text-decoration: none;
-        }
-        .hero-section .btn:hover {
-            background-color: #b36d18;
-        }
-        #product{
-            display: flex;
-            justify-content: space-between;
-            flex-wrap: wrap;
-            margin: 20px;
-        }
-.product {
-    width: 33%; /* Adjust width as needed */
-    background-color: white;
-    border-radius: 10px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-    margin-bottom: 20px;
-    padding: 20px;
-    text-align: center;
-}
-
-.product img {
-    width: 100%;
-    border-radius: 10px;
-    margin-bottom: 10px;
-}
-
-.product h3 {
-    margin-bottom: 10px;
-    font-size: 24px;
-}
-
-.product p {
-    margin-bottom: 10px;
-    font-size: 18px;
-}
-
-.product a {
-    background-color: #ce881e;
-    color: white;
-    padding: 8px 16px;
-    border-radius: 5px;
-    text-decoration: none;
-}
-
-.product a:hover {
-    background-color: #b36d18;
-}
-
-
-        
-        
-    </style>
-    {% endblock %}
+    <!-- Bootstrap JS and dependencies -->
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.3/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
 </body>
 </html>
