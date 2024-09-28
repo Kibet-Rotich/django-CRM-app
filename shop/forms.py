@@ -1,7 +1,7 @@
 # shop/forms.py
 from django import forms
-from django.contrib.auth.forms import UserCreationForm
-from .models import User,Location
+from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
+from .models import User, Location, Item, Order
 
 class CustomUserCreationForm(UserCreationForm):
     class Meta(UserCreationForm.Meta):
@@ -14,8 +14,7 @@ class CheckoutForm(forms.Form):
     payment_mode = forms.ChoiceField(choices=[('Mpesa', 'Mpesa')], label="Payment Mode")
 
 
-from django import forms
-from .models import Order
+
 
 class OrderStatusForm(forms.ModelForm):
     class Meta:
@@ -31,9 +30,22 @@ class OrderStatusForm(forms.ModelForm):
 
 
 
-from django import forms
-from django.contrib.auth.forms import AuthenticationForm
+
 
 class CustomLoginForm(AuthenticationForm):
     username = forms.CharField(label="Username", max_length=150)
     password = forms.CharField(label="Password", widget=forms.PasswordInput)
+
+
+
+# Form for Item model
+class ItemForm(forms.ModelForm):
+    class Meta:
+        model = Item
+        fields = ['name', 'description', 'price', 'instock', 'link']
+
+# Form for Location model
+class LocationForm(forms.ModelForm):
+    class Meta:
+        model = Location
+        fields = ['name', 'delivery_price', 'business_days']

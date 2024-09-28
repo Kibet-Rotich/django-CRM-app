@@ -316,3 +316,85 @@ def login_view(request):
         form = CustomLoginForm()
     
     return render(request, 'login.html', {'form': form})
+
+from django.shortcuts import render, get_object_or_404, redirect
+from django.urls import reverse
+from .models import Item, Location
+from .forms import ItemForm, LocationForm
+
+# View to list all items
+def item_list(request):
+    items = Item.objects.all()
+    return render(request, 'item_list.html', {'items': items})
+
+# View to add a new item
+def item_create(request):
+    if request.method == 'POST':
+        form = ItemForm(request.POST)
+        if form.is_valid():
+            form.save()
+            return redirect('item_list')  # Redirect to item list after successful creation
+    else:
+        form = ItemForm()
+    return render(request, 'item_form.html', {'form': form})
+
+# View to update an existing item
+def item_update(request, item_id):
+    item = get_object_or_404(Item, id=item_id)
+    if request.method == 'POST':
+        form = ItemForm(request.POST, instance=item)
+        if form.is_valid():
+            form.save()
+            return redirect('item_list')
+    else:
+        form = ItemForm(instance=item)
+    return render(request, 'item_form.html', {'form': form})
+
+# Similar views for Location
+def location_list(request):
+    locations = Location.objects.all()
+    return render(request, 'location_list.html', {'locations': locations})
+
+def location_create(request):
+    if request.method == 'POST':
+        form = LocationForm(request.POST)
+        if form.is_valid():
+            form.save()
+            return redirect('location_list')
+    else:
+        form = LocationForm()
+    return render(request, 'location_form.html', {'form': form})
+
+def location_update(request, location_id):
+    location = get_object_or_404(Location, id=location_id)
+    if request.method == 'POST':
+        form = LocationForm(request.POST, instance=location)
+        if form.is_valid():
+            form.save()
+            return redirect('location_list')
+    else:
+        form = LocationForm(instance=location)
+    return render(request, 'location_form.html', {'form': form})
+
+from django.db.models import Sum, Count
+from django.shortcuts import render
+from .models import Item, Order, OrderItem, Location
+
+def admin_dashboard(request):
+    # Analytics
+    total_orders = Order.objects.count()
+    total_revenue = OrderItem.objects.aggregate(Sum('total_price'))['total_price__sum'] or 0
+    top_items = OrderItem.objects.values('product__name').annotate(total_sold=Sum('quantity')).order_by('-total_sold')[:5]
+    items_instock = Item.objects.aggregate(Sum('instock'))['instock__sum'] or 0
+    total_items = Item.objects.count()
+    total_locations = Location.objects.count()
+
+    context = {
+        'total_orders': total_orders,
+        'total_revenue': total_revenue,
+        'top_items': top_items,
+        'items_instock': items_instock,
+        'total_items': total_items,
+        'total_locations': total_locations,
+    }
+    return render(request, 'admin_dashboard.html', context)
