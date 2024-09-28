@@ -311,7 +311,7 @@ def login_view(request):
             user = authenticate(request, username=username, password=password)
             if user is not None:
                 login(request, user)
-                return redirect('orders')  # Redirect to a success page
+                return redirect('dashboard')  # Redirect to a success page
     else:
         form = CustomLoginForm()
     
@@ -321,13 +321,15 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.urls import reverse
 from .models import Item, Location
 from .forms import ItemForm, LocationForm
+from django.contrib.auth.decorators import login_required
 
-# View to list all items
+@login_required
 def item_list(request):
     items = Item.objects.all()
     return render(request, 'item_list.html', {'items': items})
 
 # View to add a new item
+@login_required
 def item_create(request):
     if request.method == 'POST':
         form = ItemForm(request.POST)
@@ -339,6 +341,7 @@ def item_create(request):
     return render(request, 'item_form.html', {'form': form})
 
 # View to update an existing item
+@login_required
 def item_update(request, item_id):
     item = get_object_or_404(Item, id=item_id)
     if request.method == 'POST':
@@ -351,10 +354,12 @@ def item_update(request, item_id):
     return render(request, 'item_form.html', {'form': form})
 
 # Similar views for Location
+@login_required
 def location_list(request):
     locations = Location.objects.all()
     return render(request, 'location_list.html', {'locations': locations})
 
+@login_required
 def location_create(request):
     if request.method == 'POST':
         form = LocationForm(request.POST)
@@ -365,6 +370,7 @@ def location_create(request):
         form = LocationForm()
     return render(request, 'location_form.html', {'form': form})
 
+@login_required
 def location_update(request, location_id):
     location = get_object_or_404(Location, id=location_id)
     if request.method == 'POST':
@@ -380,7 +386,8 @@ from django.db.models import Sum, Count
 from django.shortcuts import render
 from .models import Item, Order, OrderItem, Location
 
-def admin_dashboard(request):
+@login_required
+def dashboard(request):
     # Analytics
     total_orders = Order.objects.count()
     total_revenue = OrderItem.objects.aggregate(Sum('total_price'))['total_price__sum'] or 0
@@ -397,4 +404,5 @@ def admin_dashboard(request):
         'total_items': total_items,
         'total_locations': total_locations,
     }
-    return render(request, 'admin_dashboard.html', context)
+    return render(request, 'dashboard.html', context)
+

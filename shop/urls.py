@@ -18,7 +18,7 @@ urlpatterns = [
     path('locations/', views.location_list, name='location_list'),
     path('locations/add/', views.location_create, name='location_create'),
     path('locations/<int:location_id>/edit/', views.location_update, name='location_update'),
-    path('admin_dashboard/', views.admin_dashboard, name='admin_dashboard'),
+    path('dashboard', views.dashboard, name='dashboard'),
 
     # path('signup/', views.signup, name='signup'),
     # path('logout/', views.logout_view, name='logout'),
