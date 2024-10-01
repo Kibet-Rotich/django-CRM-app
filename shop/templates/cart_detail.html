@@ -1,19 +1,15 @@
 {% extends 'base.html' %}
-{% load multiply %}
 
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cart & Checkout - Cenocade Enterprises</title>
-</head>
-<body>
-    {% block content %}
-    <section id="cart-container">
-        <h2>Your Cart</h2>
-        <table id="cart-table">
-            <thead>
+{% block title %}
+Cart & Checkout - Cenocade Enterprises
+{% endblock %}
+
+{% block content %}
+<section id="cart-container" class="container">
+    <h2>Your Cart</h2>
+    <div class="table-responsive-sm">
+        <table id="cart-table" class="table table-bordered table-sm">
+            <thead class="thead-light">
                 <tr>
                     <th>Item</th>
                     <th>Price</th>
@@ -26,199 +22,196 @@
                 <!-- Cart items will be dynamically inserted here -->
             </tbody>
         </table>
-        <div id="cart-total">
-            <p>Total Amount: KES <span id="cart-total-amount">0.00</span></p>
-        </div>
-    </section>
+    </div>
+    
+    <div id="cart-total" class="mb-4">
+        <p>Total Amount: KES <span id="cart-total-amount">0.00</span></p>
+    </div>
+</section>
 
-    <section id="checkout-container">
-        <h2>Checkout</h2>
-        <!-- Form for user details and delivery location -->
-        <form id="checkout-form" method="POST" action="{% url 'initiate_payment' %}">
-            {% csrf_token %}
-            
-            <div class="form-group">
+<section id="checkout-container" class="container">
+    <h2>Checkout</h2>
+    <form id="checkout-form" method="POST" action="{% url 'initiate_payment' %}">
+        {% csrf_token %}
+        <div class="form-row">
+            <div class="form-group col-md-6">
                 <label for="name">Name:</label>
-                <input type="text" id="name" name="name" required>
+                <input type="text" id="name" name="name" class="form-control" required>
             </div>
-
-            <div class="form-group">
+            <div class="form-group col-md-6">
                 <label for="phone">Phone Number:</label>
-                <input type="text" id="phone_number" name="phone_number" required pattern="\+?\d{10,13}" placeholder="+254712345678">
+                <input type="text" id="phone_number" name="phone_number" class="form-control" required pattern="\+?\d{10,13}" placeholder="+254712345678">
             </div>
+        </div>
 
-            <div class="form-group">
-                <label for="location">Delivery Location:</label>
-                <select id="location" name="location_id" required onchange="updateTotalWithDelivery()">
-                    <option value="" data-price="0">-- Select a location --</option>
-                    {% for location in locations %}
-                    <option value="{{ location.id }}" data-price="{{ location.delivery_price }}">{{ location.name }} (KES {{ location.delivery_price }})</option>
-                    {% endfor %}
-                </select>
-            </div>
+        <div class="form-group">
+            <label for="location">Delivery Location:</label>
+            <select id="location" name="location_id" class="form-control" required onchange="updateTotalWithDelivery()">
+                <option value="" data-price="0">-- Select a location --</option>
+                {% for location in locations %}
+                <option value="{{ location.id }}" data-price="{{ location.delivery_price }}">{{ location.name }} (KES {{ location.delivery_price }})</option>
+                {% endfor %}
+            </select>
+        </div>
 
-            <div id="checkout-total">
-                <p>Cart Total: KES <span id="cart-total-amount-display">0.00</span></p>
-                <p>Delivery Fee: KES <span id="delivery-fee">0.00</span></p>
-                <p>Total Amount: KES <span id="total-amount">0.00</span></p>
-            </div>
+        <div id="checkout-total">
+            <p>Cart Total: KES <span id="cart-total-amount-display">0.00</span></p>
+            <p>Delivery Fee: KES <span id="delivery-fee">0.00</span></p>
+            <p>Total Amount: KES <span id="total-amount">0.00</span></p>
+        </div>
 
-            <!-- Hidden input to store total amount (including delivery) -->
-            <input type="hidden" id="amount" name="amount" value="0.00">
+        <input type="hidden" id="amount" name="amount" value="0.00">
+        <input type="hidden" id="cart-items-hidden" name="cart_items" value="[]">
 
-            <!-- Include cart items in hidden fields to send to backend -->
-            <input type="hidden" id="cart-items-hidden" name="cart_items" value="[]">
+        <button type="submit" id="pay-button" class="btn btn-primary">Pay</button>
+    </form>
+</section>
+{% endblock %}
 
-            <button type="submit" id="pay-button">Pay</button>
-        </form>
-    </section>
-    
-    <script>
-        // Function to start querying the payment status after initiating payment
-        function queryPaymentStatus(checkoutRequestId, orderId) {
-            let attempts = 0;  
-            const maxAttempts = 4;  
-            const delay = 2000;  
-            
-            function checkStatus() {
-                fetch(`/payment/query/${checkoutRequestId}/`)
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.status === "success") {
-                            alert("Payment received and order processed successfully!");
-                            // Redirect to the success page with the order ID
-                            window.location.href = `/order_success/${orderId}/`;  // Use orderId here
-                        } else if (attempts < maxAttempts) {
-                            attempts++;
-                            setTimeout(checkStatus, delay);
-                        } else {
-                            alert("Payment processing timeout. Please try again.");
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error querying payment status:', error);
-                        alert('Error checking payment status. Please try again later.');
-                    });
-            }
-            
-            setTimeout(checkStatus, delay);
-        }
+{% block extra_js %}
+<script>
+    // Function to start querying the payment status after initiating payment
+    function queryPaymentStatus(checkoutRequestId, orderId) {
+        let attempts = 0;  
+        const maxAttempts = 4;  
+        const delay = 2000;  
         
-        // Add an event listener to the form submission
-        document.getElementById('checkout-form').addEventListener('submit', function(event) {
-            event.preventDefault();
-            
-            const formData = new FormData(this);
-            
-            fetch("{% url 'initiate_payment' %}", {
-                method: 'POST',
-                headers: {
-                    'X-CSRFToken': '{{ csrf_token }}'
-                },
-                body: formData,
-            })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Network response was not ok');
-                }
-                return response.json();
-            })
-            .then(data => {
-                if (data.status === 'success') {
-                    const checkoutRequestId = data.checkout_request_id;
-                    const orderId = data.order_id;  // Get the order ID from the response
-                    alert('Payment initiated. Please complete the payment on your phone.');
-                    
-                    // Start querying the payment status after 2 seconds
-                    queryPaymentStatus(checkoutRequestId, orderId);  // Pass order ID here
-                } else {
-                    alert('Failed to initiate payment. Please try again.');
-                }
-            })
-            .catch(error => {
-                console.error('Error initiating payment:', error);
-                alert('An error occurred while processing your payment. Please try again.');
-            });
-        });
-        
-        // Cart-related functionality
-        let cartTotal = 0;
-        let deliveryFee = 0;
-    
-        // On DOM load, update the cart
-        document.addEventListener('DOMContentLoaded', function() {
-            updateCart();  // Initialize cart
-        });
-    
-        // Function to update the cart display
-        function updateCart() {
-            const cartItemsContainer = document.getElementById('cart-items');
-            const cartTotalElement = document.getElementById('cart-total-amount');
-            const cartItemsHiddenInput = document.getElementById('cart-items-hidden');
-            
-            cartItemsContainer.innerHTML = '';  // Clear existing cart items
-            const cart = JSON.parse(localStorage.getItem('cart')) || [];
-            cartTotal = 0;
-    
-            if (cart.length === 0) {
-                cartItemsContainer.innerHTML = '<tr><td colspan="4">Your cart is empty</td></tr>';
-            } else {
-                cart.forEach(item => {
-                    const cartItem = document.createElement('tr');
-                    const itemTotal = item.price * item.quantity;
-    
-                    cartItem.innerHTML = `
-                        <td>${item.name}</td>
-                        <td>KES ${item.price.toFixed(2)}</td>
-                        <td><input type="number" min="1" value="${item.quantity}" onchange="updateQuantity(${item.id}, this.value)"></td>
-                        <td>KES ${itemTotal.toFixed(2)}</td>
-                        <td><button onclick="deleteItem(${item.id})">Delete</button></td>
-                    `;
-    
-                    cartItemsContainer.appendChild(cartItem);
-                    cartTotal += itemTotal;
+        function checkStatus() {
+            fetch(`/payment/query/${checkoutRequestId}/`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === "success") {
+                        alert("Payment received and order processed successfully!");
+                        // Redirect to the success page with the order ID
+                        window.location.href = `/order_success/${orderId}/`;  // Use orderId here
+                    } else if (attempts < maxAttempts) {
+                        attempts++;
+                        setTimeout(checkStatus, delay);
+                    } else {
+                        alert("Payment processing timeout. Please try again.");
+                    }
+                })
+                .catch(error => {
+                    console.error('Error querying payment status:', error);
+                    alert('Error checking payment status. Please try again later.');
                 });
+        }
+        
+        setTimeout(checkStatus, delay);
+    }
+    
+    // Add an event listener to the form submission
+    document.getElementById('checkout-form').addEventListener('submit', function(event) {
+        event.preventDefault();
+        
+        const formData = new FormData(this);
+        
+        fetch("{% url 'initiate_payment' %}", {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: formData,
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
             }
+            return response.json();
+        })
+        .then(data => {
+            if (data.status === 'success') {
+                const checkoutRequestId = data.checkout_request_id;
+                const orderId = data.order_id;  // Get the order ID from the response
+                alert('Payment initiated. Please complete the payment on your phone.');
+                
+                // Start querying the payment status after 2 seconds
+                queryPaymentStatus(checkoutRequestId, orderId);  // Pass order ID here
+            } else {
+                alert('Failed to initiate payment. Please try again.');
+            }
+        })
+        .catch(error => {
+            console.error('Error initiating payment:', error);
+            alert('An error occurred while processing your payment. Please try again.');
+        });
+    });
     
-            cartTotalElement.textContent = cartTotal.toFixed(2);
-            cartItemsHiddenInput.value = JSON.stringify(cart);  // Update hidden input with cart data
-            updateTotalWithDelivery();  // Update total amount with delivery
-        }
-    
-        // Function to update item quantity
-        function updateQuantity(itemId, newQuantity) {
-            let cart = JSON.parse(localStorage.getItem('cart')) || [];
-            cart = cart.map(item => {
-                if (item.id === itemId) {
-                    item.quantity = parseInt(newQuantity, 10);
-                }
-                return item;
+    // Cart-related functionality
+    let cartTotal = 0;
+    let deliveryFee = 0;
+
+    // On DOM load, update the cart
+    document.addEventListener('DOMContentLoaded', function() {
+        updateCart();  // Initialize cart
+    });
+
+    // Function to update the cart display
+    function updateCart() {
+        const cartItemsContainer = document.getElementById('cart-items');
+        const cartTotalElement = document.getElementById('cart-total-amount');
+        const cartItemsHiddenInput = document.getElementById('cart-items-hidden');
+        
+        cartItemsContainer.innerHTML = '';  // Clear existing cart items
+        const cart = JSON.parse(localStorage.getItem('cart')) || [];
+        cartTotal = 0;
+
+        if (cart.length === 0) {
+            cartItemsContainer.innerHTML = '<tr><td colspan="4">Your cart is empty</td></tr>';
+        } else {
+            cart.forEach(item => {
+                const cartItem = document.createElement('tr');
+                const itemTotal = item.price * item.quantity;
+
+                cartItem.innerHTML = `
+                    <td>${item.name}</td>
+                    <td>KES ${item.price.toFixed(2)}</td>
+                    <td><input type="number" min="1" value="${item.quantity}" onchange="updateQuantity(${item.id}, this.value)"></td>
+                    <td>KES ${itemTotal.toFixed(2)}</td>
+                    <td><button onclick="deleteItem(${item.id})">Delete</button></td>
+                `;
+
+                cartItemsContainer.appendChild(cartItem);
+                cartTotal += itemTotal;
             });
-            localStorage.setItem('cart', JSON.stringify(cart));
-            updateCart(); // Refresh the cart
         }
-    
-        // Function to delete an item from the cart
-        function deleteItem(itemId) {
-            let cart = JSON.parse(localStorage.getItem('cart')) || [];
-            cart = cart.filter(item => item.id !== itemId);
-            localStorage.setItem('cart', JSON.stringify(cart));
-            updateCart(); // Refresh the cart
-        }
-    
-        // Function to update total cost including delivery fee
-        function updateTotalWithDelivery() {
-            const locationSelect = document.getElementById('location');
-            deliveryFee = parseFloat(locationSelect.options[locationSelect.selectedIndex].getAttribute('data-price'));
-            const totalAmount = cartTotal + deliveryFee;
-    
-            document.getElementById('cart-total-amount-display').textContent = cartTotal.toFixed(2);
-            document.getElementById('delivery-fee').textContent = deliveryFee.toFixed(2);
-            document.getElementById('total-amount').textContent = totalAmount.toFixed(2);
-            document.getElementById('amount').value = totalAmount.toFixed(2);  // Update the hidden field
-        }
-    </script>
-    
-    {% endblock %}
-</body>
-</html>
+
+        cartTotalElement.textContent = cartTotal.toFixed(2);
+        cartItemsHiddenInput.value = JSON.stringify(cart);  // Update hidden input with cart data
+        updateTotalWithDelivery();  // Update total amount with delivery
+    }
+
+    // Function to update item quantity
+    function updateQuantity(itemId, newQuantity) {
+        let cart = JSON.parse(localStorage.getItem('cart')) || [];
+        cart = cart.map(item => {
+            if (item.id === itemId) {
+                item.quantity = parseInt(newQuantity, 10);
+            }
+            return item;
+        });
+        localStorage.setItem('cart', JSON.stringify(cart));
+        updateCart(); // Refresh the cart
+    }
+
+    // Function to delete an item from the cart
+    function deleteItem(itemId) {
+        let cart = JSON.parse(localStorage.getItem('cart')) || [];
+        cart = cart.filter(item => item.id !== itemId);
+        localStorage.setItem('cart', JSON.stringify(cart));
+        updateCart(); // Refresh the cart
+    }
+
+    // Function to update total cost including delivery fee
+    function updateTotalWithDelivery() {
+        const locationSelect = document.getElementById('location');
+        deliveryFee = parseFloat(locationSelect.options[locationSelect.selectedIndex].getAttribute('data-price'));
+        const totalAmount = cartTotal + deliveryFee;
+
+        document.getElementById('cart-total-amount-display').textContent = cartTotal.toFixed(2);
+        document.getElementById('delivery-fee').textContent = deliveryFee.toFixed(2);
+        document.getElementById('total-amount').textContent = totalAmount.toFixed(2);
+        document.getElementById('amount').value = totalAmount.toFixed(2);  // Update the hidden field
+    }
+</script>
+{% endblock %}
