@@ -19,6 +19,11 @@ urlpatterns = [
     path('locations/add/', views.location_create, name='location_create'),
     path('locations/<int:location_id>/edit/', views.location_update, name='location_update'),
     path('dashboard', views.dashboard, name='dashboard'),
+    path('orders/update_pending/', views.update_pending_orders, name='update_pending_orders'),
+    path('update-order-status/', views.update_order_status, name='update_order_status'),
+    path('get-orders-by-status/', views.get_orders_by_status, name='get_orders_by_status'),
+    path('search-orders/', views.search_orders, name='search_orders'),
+    path('update-pending-orders/', views.update_pending_orders, name='update_pending_orders'),
 
     # path('signup/', views.signup, name='signup'),
     # path('logout/', views.logout_view, name='logout'),

@@ -38,7 +38,6 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'shop',
-    'payments',
 ]
 
 MIDDLEWARE = [
@@ -128,10 +127,5 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 AUTH_USER_MODEL = 'shop.User'
 
 
-DARAJA_CONSUMER_KEY = 'EZnLo86pMDXxz1tRDpx3DNnoOCEpW1jHL8AeDbLkhaGFLfnE'
-DARAJA_CONSUMER_SECRET = 'pl6F4uc3vf7mx3B3Iei02ZHpM7IhLGIl68OA4FrDktGpt7wUf9bTWllBD0zEmcM9'
-DARAJA_SHORTCODE = '174379'
-DARAJA_PASSKEY = 'bfb279f9aa9bdbcf158e97dd71a467cd2e0c893059b10f78e6b72ada1ed2c919'
-DARAJA_CALLBACK_URL = 'https://cenocade.com/payment_confirmation'
 
 LOGIN_URL = 'login/'

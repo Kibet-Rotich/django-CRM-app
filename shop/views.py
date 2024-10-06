@@ -36,7 +36,7 @@ from .models import Order, Location
 def get_access_token():
     consumer_key = settings.DARAJA_CONSUMER_KEY
     consumer_secret = settings.DARAJA_CONSUMER_SECRET
-    api_url = "https://sandbox.safaricom.co.ke/oauth/v1/generate?grant_type=client_credentials"
+    api_url = "https://api.safaricom.co.ke/oauth/v1/generate?grant_type=client_credentials"
     r = requests.get(api_url, auth=(consumer_key, consumer_secret))
     json_response = r.json()
     return json_response['access_token']
@@ -63,6 +63,10 @@ def initiate_payment(request):
         if not phone_number or not amount or not location_id or not cart_items:
             return JsonResponse({'error': 'Phone number, amount, location, and cart items are required'}, status=400)
 
+        # Validate phone number
+        if not phone_number.startswith('254') or len(phone_number) != 12:
+            return JsonResponse({'error': 'Invalid phone number format'}, status=400)
+
         try:
             location = Location.objects.get(id=location_id)
         except Location.DoesNotExist:
@@ -78,17 +82,20 @@ def initiate_payment(request):
 
         # Save order items
         for item in cart_items:
-            product = Item.objects.get(id=item['id'])  # Retrieve the Item object using the product ID
-            OrderItem.objects.create(
-            order=order,
-            product=product,  # Assign the product object
-            quantity=item['quantity']
-    )
+            try:
+                product = Item.objects.get(id=item['id'])  # Retrieve the Item object using the product ID
+            except Item.DoesNotExist:
+                return JsonResponse({'error': f'Product with ID {item["id"]} does not exist'}, status=400)
 
+            OrderItem.objects.create(
+                order=order,
+                product=product,  # Assign the product object
+                quantity=item['quantity']
+            )
 
         # Continue with the payment process (STK Push)
         access_token = get_access_token()
-        api_url = "https://sandbox.safaricom.co.ke/mpesa/stkpush/v1/processrequest"
+        api_url = "https://api.safaricom.co.ke/mpesa/stkpush/v1/processrequest"
         headers = {
             "Authorization": f"Bearer {access_token}"
         }
@@ -104,13 +111,13 @@ def initiate_payment(request):
             "BusinessShortCode": business_short_code,
             "Password": password,
             "Timestamp": timestamp,
-            "TransactionType": "CustomerPayBillOnline",
+            "TransactionType": "CustomerBuyGoodsOnline",  # For Buy Goods Till
             "Amount": amount,
             "PartyA": phone_number,
-            "PartyB": business_short_code,
+            "PartyB": business_short_code,  # Ensure this is your Till number
             "PhoneNumber": phone_number,
             "CallBackURL": settings.DARAJA_CALLBACK_URL,
-            "AccountReference": str(order.id),
+            "AccountReference": str(order.id),  # Optional for Buy Goods
             "TransactionDesc": "Payment for order"
         }
 
@@ -120,10 +127,10 @@ def initiate_payment(request):
         if response_data.get('ResponseCode') == '0':
             order.checkout_request_id = response_data.get('CheckoutRequestID')
             order.save()
-            return JsonResponse({  # Add return here
+            return JsonResponse({
                 'status': 'success',
                 'checkout_request_id': response_data.get('CheckoutRequestID'),
-                'order_id': order.id  # Add the order ID to the response
+                'order_id': order.id
             }, status=200)
 
         else:
@@ -192,23 +199,62 @@ from django.contrib.auth.decorators import login_required
 def orders(request):
     # Fetch all orders
     orders = Order.objects.all()
-
-    if request.method == 'POST':
-        # Handle order status update for production status
-        order_id = request.POST.get('order_id')
-        new_status = request.POST.get('status')
-        
-        if order_id and new_status:
-            # Update the production status
-            order = get_object_or_404(Order, id=order_id)
-            order.status = new_status  # This is the production status field
-            order.save()
-
-        # Redirect to the same page after updating the status
-        return redirect('orders')
-
     return render(request, 'orders.html', {'orders': orders})
 
+import json
+from django.http import JsonResponse
+from .models import Order
+
+def update_order_status(request):
+    if request.method == 'POST':
+        try:
+            # Parse the JSON request body
+            data = json.loads(request.body)
+            order_id = data.get('order_id')
+            new_status = data.get('status')
+
+            # Fetch the order and update the status
+            try:
+                order = Order.objects.get(id=order_id)
+                order.status = new_status
+                order.save()
+                return JsonResponse({'success': True})
+            except Order.DoesNotExist:
+                return JsonResponse({'success': False, 'message': 'Order not found'})
+        
+        except json.JSONDecodeError:
+            return JsonResponse({'success': False, 'message': 'Invalid JSON format'})
+
+    return JsonResponse({'success': False, 'message': 'Invalid request'})
+
+from django.http import JsonResponse
+from .models import Order
+
+def get_orders_by_status(request):
+    status = request.GET.get('status')
+    orders = Order.objects.filter(status=status)
+    order_data = [{
+        'id': order.id,
+        'phone_number': order.phone_number,
+        'amount': order.amount,
+        'items': [{'product': {'name': item.product.name}, 'quantity': item.quantity} for item in order.items.all()],
+        'production_status': order.get_status_display(),
+        'payment_status': order.get_payment_status_display(),
+    } for order in orders]
+    return JsonResponse({'orders': order_data})
+
+def search_orders(request):
+    query = request.GET.get('query')
+    orders = Order.objects.filter(id__icontains=query) | Order.objects.filter(phone_number__icontains=query)
+    order_data = [{
+        'id': order.id,
+        'phone_number': order.phone_number,
+        'amount': order.amount,
+        'items': [{'product': {'name': item.product.name}, 'quantity': item.quantity} for item in order.items.all()],
+        'production_status': order.get_status_display(),
+        'payment_status': order.get_payment_status_display(),
+    } for order in orders]
+    return JsonResponse({'orders': order_data})
 
 from django.conf import settings
 import requests
@@ -229,7 +275,8 @@ def generate_password():
 def get_access_token():
     consumer_key = settings.DARAJA_CONSUMER_KEY
     consumer_secret = settings.DARAJA_CONSUMER_SECRET
-    api_url = f"{"https://sandbox.safaricom.co.ke"}/oauth/v1/generate?grant_type=client_credentials"
+    api_url = "https://api.safaricom.co.ke/oauth/v1/generate?grant_type=client_credentials"
+
 
     response = requests.get(api_url, auth=(consumer_key, consumer_secret))
     access_token = response.json()['access_token']
@@ -255,7 +302,8 @@ def query_transaction_status(request, checkout_request_id):
         "Content-Type": "application/json"
     }
     
-    query_url = f"https://sandbox.safaricom.co.ke/mpesa/stkpushquery/v1/query"  # Use production URL in prod
+    query_url = "https://api.safaricom.co.ke/mpesa/stkpushquery/v1/query"
+
     
     response = requests.post(query_url, json=payload, headers=headers)
 
@@ -406,3 +454,46 @@ def dashboard(request):
     }
     return render(request, 'dashboard.html', context)
 
+
+from django.http import JsonResponse
+from .models import Order
+
+# Function to update the status of all pending orders
+def update_pending_orders(request):
+    # Get all orders that are pending
+    pending_orders = Order.objects.filter(payment_status='pending')
+    
+    updated_orders = {
+        'successful': [],
+        'failed': [],
+        'still_pending': []
+    }
+
+    # Loop through all pending orders
+    for order in pending_orders:
+        # Call the query_transaction_status() to check the status of each order
+        # Since it's a view, call it directly and access the content as JSON.
+        response = query_transaction_status(request, order.checkout_request_id)
+        result = response.content.decode('utf-8')  # Decode the JSON response content
+        result = json.loads(result)  # Parse the JSON string to a Python dictionary
+
+        # Check if the result indicates success or failure
+        if result.get("status") == "success":
+            # Update order status to successful
+            order.payment_status = 'successful'
+            order.save()
+            updated_orders['successful'].append(order.id)
+        elif result.get("status") == "failed":
+            # Update order status to failed
+            order.payment_status = 'failed'
+            order.save()
+            updated_orders['failed'].append(order.id)
+        else:
+            # Leave the order as pending if still in progress
+            updated_orders['still_pending'].append(order.id)
+    
+    # Return a response showing the result of the update
+    return JsonResponse({
+        "message": "Orders have been updated",
+        "updated_orders": updated_orders
+    })

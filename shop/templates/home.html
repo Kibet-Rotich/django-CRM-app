@@ -5,7 +5,7 @@
 {% block extra_css %}
 <style>
     .hero-section {
-        background-color: black;
+        background-color: #333;
         color: white;
         padding: 20px;
         border-radius: 10px;
@@ -63,6 +63,8 @@
         {% endfor %}
     </div>
 </div>
+
+<button id="cart-button" class="btn btn-primary d-none" style="position: fixed; bottom: 20px; right: 20px; z-index: 1;">Go to Cart</button>
 {% endblock %}
 
 {% block extra_js %}
@@ -78,6 +80,34 @@
         }
 
         localStorage.setItem('cart', JSON.stringify(cart));
+        checkCart();
+
+        const toast = document.createElement('div');
+        toast.classList.add('toast');
+        toast.innerHTML = `<div class="toast-header">
+            <strong class="mr-auto">Cenocade Enterprises</strong>
+            <button type="button" class="ml-2 mb-1 close" data-dismiss="toast">&times;</button>
+        </div>
+        <div class="toast-body">
+            Added to cart
+        </div>`;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 1500);
     }
+
+    function checkCart() {
+        const cart = JSON.parse(localStorage.getItem('cart')) || [];
+        if (cart.length > 0) {
+            $('#cart-button').removeClass('d-none');
+        } else {
+            $('#cart-button').addClass('d-none');
+        }
+    }
+    checkCart();
+    
+    $('#cart-button').click(function() {
+        window.location.href = "{% url 'cart' %}";
+    });
 </script>
+
 {% endblock %}

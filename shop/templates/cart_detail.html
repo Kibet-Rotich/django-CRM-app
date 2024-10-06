@@ -71,11 +71,26 @@ Cart & Checkout - Cenocade Enterprises
 {% block extra_js %}
 <script>
     // Function to start querying the payment status after initiating payment
+    function normalizePhoneNumber(phoneNumber) {
+        // Remove any leading "+" sign
+        phoneNumber = phoneNumber.replace(/^(\+)/, '');
+    
+        // If the phone number starts with "07", replace it with "2547"
+        if (phoneNumber.startsWith('07')) {
+            phoneNumber = '254' + phoneNumber.substring(1);
+        }
+    
+        // Return the normalized phone number
+        return phoneNumber;
+    }
+    
     function queryPaymentStatus(checkoutRequestId, orderId) {
-        let attempts = 0;  
-        const maxAttempts = 4;  
-        const delay = 2000;  
+        let attempts = 2;  
+        const maxAttempts = 2;  
+        const delay = 45000;  
+   
         
+
         function checkStatus() {
             fetch(`/payment/query/${checkoutRequestId}/`)
                 .then(response => response.json())
@@ -106,6 +121,15 @@ Cart & Checkout - Cenocade Enterprises
         
         const formData = new FormData(this);
         
+        // Get the phone number from the form
+        let phoneNumber = formData.get('phone_number');
+        
+        // Normalize the phone number before submitting
+        phoneNumber = normalizePhoneNumber(phoneNumber);
+    
+        // Update the normalized phone number in the form data
+        formData.set('phone_number', phoneNumber);
+    
         fetch("{% url 'initiate_payment' %}", {
             method: 'POST',
             headers: {
@@ -140,11 +164,12 @@ Cart & Checkout - Cenocade Enterprises
     // Cart-related functionality
     let cartTotal = 0;
     let deliveryFee = 0;
-
+    
     // On DOM load, update the cart
     document.addEventListener('DOMContentLoaded', function() {
         updateCart();  // Initialize cart
     });
+    
 
     // Function to update the cart display
     function updateCart() {

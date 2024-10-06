@@ -17,6 +17,8 @@
         header {
             display: flex;
             justify-content: space-between;
+            background-color: #e6b17e;
+
         }
         header ul li a {
             color: black;
@@ -33,13 +35,16 @@
             display: flex;
             justify-content: space-between;
         }
+        footer{
+            background-color: #e6b17e;
+        }
     </style>
     {% block extra_css %}{% endblock %}
 </head>
 <body>
     <header class="container py-3">
         <div id="logo">
-            <img src="https://i.postimg.cc/Y9qFKt10/cenocade-colour-no-background-modified.png" alt="Cenocade Enterprises">
+            <img src="https://i.postimg.cc/B6YKJRgg/cenocade-colour-no-background.png" alt="Cenocade Enterprises">
         </div>
         <div id="nav" class="d-flex justify-content-between align-items-center">
             <ul class="d-flex list-unstyled m-0">
@@ -55,11 +60,15 @@
     <div class="container">
         {% block content %}{% endblock %}
     </div>
+    <footer class="container text-center py-3">
+        <p>&copy; 2024 Cenocade Enterprises. All rights reserved.</p>
+    </footer>
 
     <!-- Bootstrap JS and dependencies -->
+    {% block extra_js %}
     <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.3/dist/umd/popper.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
-    {% block extra_js %}{% endblock %}
+    {% endblock %}
 </body>
 </html>

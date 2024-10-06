@@ -1,3 +1,6 @@
+{% extends "base.html" %}
+
+{% block content %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -7,8 +10,32 @@
 </head>
 <body>
     <h1>Orders</h1>
+    <a href="{% url 'dashboard' %}" class="btn btn-secondary">Back to Dashboard</a>
     
-    <table border="1">
+
+    <!-- Tabs for filtering orders by production status -->
+    <ul class="nav nav-tabs">
+        <li class="nav-item">
+            <a class="nav-link active" href="#" data-status="pending">Pending Orders</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" href="#" data-status="in_progress">In Progress Orders</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" href="#" data-status="completed">Completed Orders</a>
+        </li>
+    </ul>
+
+    <!-- Search bar -->
+    <div class="mt-4">
+        <input type="text" id="search-orders" class="form-control" placeholder="Search orders by ID or phone number...">
+    </div>
+
+    <!-- Button to trigger pending orders update -->
+    <button id="update-orders-btn" class="btn btn-primary mt-4">Update Pending Orders</button>
+
+    <!-- Orders Table -->
+    <table class="table table-bordered mt-4">
         <thead>
             <tr>
                 <th>Order ID</th>
@@ -20,36 +47,139 @@
                 <th>Change Production Status</th>
             </tr>
         </thead>
-        <tbody>
-            {% for order in orders %}
-            <tr>
-                <td>{{ order.id }}</td>
-                <td>{{ order.phone_number }}</td>
-                <td>{{ order.amount }}</td>
-                <td>
-                    <ul>
-                        {% for item in order.items.all %}
-                        <li>{{ item.product.name }} - {{ item.quantity }}</li>
-                        {% endfor %}
-                    </ul>
-                </td>
-                <td>{{ order.get_status_display }}</td>  <!-- Production status display -->
-                <td>{{ order.get_payment_status_display }}</td>  <!-- Payment status display -->
-                <td>
-                    <form method="POST">
-                        {% csrf_token %}
-                        <input type="hidden" name="order_id" value="{{ order.id }}">
-                        <select name="status">
-                            <option value="pending" {% if order.status == 'pending' %}selected{% endif %}>Pending</option>
-                            <option value="in_progress" {% if order.status == 'in_progress' %}selected{% endif %}>In Progress</option>
-                            <option value="completed" {% if order.status == 'completed' %}selected{% endif %}>Completed</option>
-                        </select>
-                        <button type="submit">Update</button>
-                    </form>
-                </td>
-            </tr>
-            {% endfor %}
+        <tbody id="orders-table-body">
+            <!-- Orders will be dynamically loaded here -->
         </tbody>
     </table>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Load pending orders initially
+            loadOrders('pending');
+
+            // Filter orders by production status via tabs
+            document.querySelectorAll('.nav-link').forEach(tab => {
+                tab.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const status = this.getAttribute('data-status');
+                    loadOrders(status);
+                });
+            });
+
+            // Search functionality
+            document.getElementById('search-orders').addEventListener('input', function() {
+                const query = this.value;
+                searchOrders(query);
+            });
+
+            // Update pending orders
+            document.getElementById('update-orders-btn').addEventListener('click', function() {
+                fetch("{% url 'update_pending_orders' %}", {
+                    method: 'GET',
+                })
+                .then(response => response.json())
+                .then(data => {
+                    alert('Pending orders have been updated.');
+                    loadOrders('pending');  // Reload pending orders after update
+                })
+                .catch(error => {
+                    console.error('Error updating pending orders:', error);
+                    alert('An error occurred while updating orders.');
+                });
+            });
+
+            // Load orders based on status
+            function loadOrders(status) {
+                fetch(`{% url 'get_orders_by_status' %}?status=${status}`, {
+                    method: 'GET',
+                })
+                .then(response => response.json())
+                .then(data => {
+                    updateOrdersTable(data.orders);
+                })
+                .catch(error => {
+                    console.error('Error fetching orders:', error);
+                });
+            }
+
+            // Search orders
+            function searchOrders(query) {
+                fetch(`{% url 'search_orders' %}?query=${query}`, {
+                    method: 'GET',
+                })
+                .then(response => response.json())
+                .then(data => {
+                    updateOrdersTable(data.orders);
+                })
+                .catch(error => {
+                    console.error('Error searching orders:', error);
+                });
+            }
+
+            // Update production status via AJAX
+            function updateProductionStatus(orderId, newStatus) {
+                fetch("{% url 'update_order_status' %}", {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    },
+                    body: JSON.stringify({ order_id: orderId, status: newStatus })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert('Order status updated successfully.');
+                        loadOrders('pending');  // Reload orders after status update
+                    } else {
+                        alert('Failed to update order status: ' + data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error updating order status:', error);
+                });
+            }
+            
+            // Dynamically update the orders table
+            function updateOrdersTable(orders) {
+                const tableBody = document.getElementById('orders-table-body');
+                tableBody.innerHTML = '';  // Clear current table
+                orders.forEach(order => {
+                    const row = `
+                        <tr>
+                            <td>${order.id}</td>
+                            <td>${order.phone_number}</td>
+                            <td>${order.amount}</td>
+                            <td>
+                                <ul>
+                                    ${order.items.map(item => `<li>${item.product.name} - ${item.quantity}</li>`).join('')}
+                                </ul>
+                            </td>
+                            <td>${order.production_status}</td>
+                            <td>${order.payment_status}</td>
+                            <td>
+                                <select data-order-id="${order.id}" class="update-status-select">
+                                    <option value="pending" ${order.production_status === 'pending' ? 'selected' : ''}>Pending</option>
+                                    <option value="in_progress" ${order.production_status === 'in_progress' ? 'selected' : ''}>In Progress</option>
+                                    <option value="completed" ${order.production_status === 'completed' ? 'selected' : ''}>Completed</option>
+                                </select>
+                            </td>
+                        </tr>
+                    `;
+                    tableBody.insertAdjacentHTML('beforeend', row);
+                });
+
+                // Add event listener for status change
+                document.querySelectorAll('.update-status-select').forEach(select => {
+                    select.addEventListener('change', function() {
+                        const orderId = this.getAttribute('data-order-id');
+                        const newStatus = this.value;
+                        updateProductionStatus(orderId, newStatus);
+                    });
+                });
+            }
+        });
+    </script>
 </body>
 </html>
+{% endblock %}
